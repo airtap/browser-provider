@@ -1,0 +1,37 @@
+{
+  "name": "browser-provider",
+  "version": "0.0.0",
+  "description": "Interface for listing and creating browsers",
+  "license": "MIT",
+  "author": "Vincent Weevers",
+  "scripts": {
+    "test": "standard && nyc node test"
+  },
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "browser-manifest": "^1.0.0",
+    "catering": "^2.0.0"
+  },
+  "devDependencies": {
+    "nyc": "^15.1.0",
+    "standard": "^14.3.4",
+    "tape": "^5.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/airtap/browser-provider.git"
+  },
+  "homepage": "https://github.com/airtap/browser-provider",
+  "keywords": [
+    "browser",
+    "airtap",
+    "abstract",
+    "discovery",
+    "interface"
+  ],
+  "engines": {
+    "node": ">=10"
+  }
+}
