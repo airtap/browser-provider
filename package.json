@@ -11,6 +11,7 @@
     "index.js"
   ],
   "dependencies": {
+    "airtap-match-browsers": "^1.0.0",
     "browser-manifest": "^1.0.0",
     "catering": "^2.0.0"
   },

@@ -9,7 +9,9 @@
 
 ## Usage
 
-With promises:
+A provider can be implemented with promises:
+
+<details><summary>Click to expand</summary>
 
 ```js
 const Provider = require('browser-provider').promises
@@ -35,7 +37,11 @@ class MyProvider extends Provider {
 }
 ```
 
-With callbacks:
+</details>
+
+Or with callbacks:
+
+<details><summary>Click to expand</summary>
 
 ```js
 const Provider = require('browser-provider')
@@ -61,17 +67,35 @@ class MyProvider extends Provider {
 }
 ```
 
+</details>
+
+Either way, the public interface supports both promises and callbacks:
+
+```js
+const provider = new MyProvider()
+
+// Get a list of desired browsers
+const wanted = [{ name: 'ff', version: 'oldest..latest' }]
+const manifests = await provider.manifests(wanted)
+
+// Instantiate a browser
+const target = { url: 'http://localhost:3000' }
+const browser = provider.browser(manifests[0], target)
+
+await browser.open()
+```
+
 ## API
 
 ### `provider = new Provider([options])`
 
 Constructor. The `options` argument is optional, to contain implementation-specific options.
 
-### `provider.manifests([callback])`
+### `provider.manifests([wanted][, callback])`
 
-Get an array of manifests. If no callback is provided, a promise is returned.
+Get an array of manifests. A `wanted` array may be provided to [match the manifests against a desired list of browsers](https://github.com/airtap/match-browsers). If that argument is omitted, the result includes all manifests. If no callback is provided, a promise is returned. If you wish to combine & match manifests from multiple providers, use [`airtap-multi`](https://github.com/airtap/multi).
 
-### `browser = provider.browser(manifest, target)`
+### `provider.browser(manifest, target)`
 
 Instantiate and synchronously return an [`abstract-browser`](https://github.com/airtap/abstract-browser) instance from a manifest.
 

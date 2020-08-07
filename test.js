@@ -48,6 +48,74 @@ test('manifests()', function (t) {
   }
 })
 
+test('manifests(wanted)', function (t) {
+  t.plan(4 * 2)
+
+  class CallbackProvider extends Provider {
+    _manifests (callback) {
+      callback(null, [{ name: 'test1' }, { name: 'test2' }])
+    }
+  }
+
+  class PromiseProvider extends ProviderP {
+    async _manifests () {
+      return [{ name: 'test1' }, { name: 'test2' }]
+    }
+  }
+
+  for (const Ctor of [CallbackProvider, PromiseProvider]) {
+    const provider = new Ctor()
+
+    let sync = true
+
+    provider.manifests([{ name: 'test2' }], function (err, manifests) {
+      t.ifError(err)
+      t.same(manifests, [bm({ name: 'test2' })])
+      t.is(sync, false, 'dezalgoed')
+    })
+
+    sync = false
+
+    provider.manifests([{ name: 'test2' }]).then(function (manifests) {
+      t.same(manifests, [bm({ name: 'test2' })])
+    })
+  }
+})
+
+test('manifests(wanted) error', function (t) {
+  t.plan(4 * 2)
+
+  class CallbackProvider extends Provider {
+    _manifests (callback) {
+      callback(null, [{ name: 'test1' }, { name: 'test2' }])
+    }
+  }
+
+  class PromiseProvider extends ProviderP {
+    async _manifests () {
+      return [{ name: 'test1' }, { name: 'test2' }]
+    }
+  }
+
+  for (const Ctor of [CallbackProvider, PromiseProvider]) {
+    const provider = new Ctor()
+
+    let sync = true
+
+    provider.manifests([{ name: 'nope' }], function (err, manifests) {
+      t.is(err.name, 'NotFoundError')
+      t.is(manifests, undefined)
+      t.is(sync, false, 'dezalgoed')
+    })
+
+    sync = false
+
+    provider.manifests([{ name: 'nope' }]).catch(function (err) {
+      t.is(err.name, 'NotFoundError')
+    })
+  }
+})
+
 test('manifests() error', function (t) {
   t.plan(4 * 2)
 

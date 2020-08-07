@@ -1,6 +1,7 @@
 'use strict'
 
 const { fromCallback, fromPromise } = require('catering')
+const matchBrowsers = require('airtap-match-browsers')
 const bm = require('browser-manifest')
 const kPromises = Symbol('kPromises')
 const domains = ['localhost']
@@ -12,9 +13,14 @@ class Provider {
     this[kPromises] = false
   }
 
-  manifests (callback) {
+  manifests (wanted, callback) {
+    if (typeof wanted === 'function') {
+      callback = wanted
+      wanted = null
+    }
+
     if (this[kPromises]) {
-      return fromPromise(this._manifests().then(normalizeManifests), callback)
+      return fromPromise(this._manifests().then(transform(wanted)), callback)
     } else {
       callback = fromCallback(callback)
       let sync = true
@@ -22,7 +28,14 @@ class Provider {
       this._manifests(function wrapped (err, manifests) {
         if (sync) return process.nextTick(wrapped, err, manifests)
         if (err) return callback(err)
-        callback(null, normalizeManifests(manifests))
+
+        try {
+          manifests = transform(wanted)(manifests)
+        } catch (err) {
+          return callback(err)
+        }
+
+        callback(null, manifests)
       })
 
       sync = false
@@ -86,6 +99,14 @@ Provider.promises = class ProviderPromises extends Provider {
 
 module.exports = Provider
 
-function normalizeManifests (manifests) {
-  return manifests.map(bm)
+function transform (wanted) {
+  return function (manifests) {
+    manifests = manifests.map(bm)
+
+    if (wanted != null) {
+      manifests = matchBrowsers(manifests, wanted)
+    }
+
+    return manifests
+  }
 }
