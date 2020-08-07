@@ -1,6 +1,6 @@
 {
   "name": "browser-provider",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Interface for listing and creating browsers",
   "license": "MIT",
   "author": "Vincent Weevers",
