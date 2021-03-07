@@ -168,28 +168,30 @@ test('default manifests()', function (t) {
 })
 
 test('browser()', function (t) {
-  t.plan(5)
+  t.plan(10)
 
-  const mockManifest = { name: 'test' }
-  const mockTarget = { url: 'http://localhost' }
-  const mockBrowser = {}
+  for (const target of [{ url: 'http://localhost' }, 'http://localhost']) {
+    const mockManifest = { name: 'test' }
+    const mockTarget = { url: 'http://localhost' }
+    const mockBrowser = {}
 
-  class TestProvider extends Provider {
-    _browser (manifest, target) {
-      t.is(manifest, mockManifest)
-      t.is(target, mockTarget)
+    class TestProvider extends Provider {
+      _browser (manifest, target) {
+        t.is(manifest, mockManifest)
+        t.same(target, mockTarget)
 
-      // Should return an abstract-browser instance, not enforced
-      return mockBrowser
+        // Should return an abstract-browser instance, not enforced
+        return mockBrowser
+      }
     }
+
+    const provider = new TestProvider()
+    const browser = provider.browser(mockManifest, target)
+
+    t.is(browser, mockBrowser)
+    t.throws(() => provider.browser(), /TypeError: First argument "manifest" must be an object/)
+    t.throws(() => provider.browser({}), /TypeError: Second argument "target" must be a string or object/)
   }
-
-  const provider = new TestProvider()
-  const browser = provider.browser(mockManifest, mockTarget)
-
-  t.is(browser, mockBrowser)
-  t.throws(() => provider.browser(), /TypeError: First argument "manifest" must be an object/)
-  t.throws(() => provider.browser({}), /TypeError: Second argument "target" must be an object/)
 })
 
 test('_browser() must be implemented', function (t) {
@@ -197,6 +199,138 @@ test('_browser() must be implemented', function (t) {
 
   for (const Ctor of [Provider, Provider.promises]) {
     t.throws(() => new Ctor().browser({}, {}), /Error: _browser\(\) is not implemented/)
+  }
+})
+
+test('find(wanted)', function (t) {
+  t.plan(5 * 2)
+
+  class CallbackProvider extends Provider {
+    _manifests (callback) {
+      callback(null, [{ name: 'test1' }, { name: 'test2' }])
+    }
+  }
+
+  class PromiseProvider extends ProviderP {
+    async _manifests () {
+      return [{ name: 'test1' }, { name: 'test2' }]
+    }
+  }
+
+  for (const Ctor of [CallbackProvider, PromiseProvider]) {
+    const provider = new Ctor()
+
+    let sync = true
+
+    provider.find({ name: 'test2' }, function (err, manifest) {
+      t.ifError(err)
+      t.same(manifest, bm({ name: 'test2' }))
+      t.is(sync, false, 'dezalgoed')
+    })
+
+    sync = false
+
+    provider.find({ name: 'test2' }).then(function (manifest) {
+      t.same(manifest, bm({ name: 'test2' }))
+    })
+
+    provider.find('test2').then(function (manifest) {
+      t.same(manifest, bm({ name: 'test2' }))
+    })
+  }
+})
+
+test('find(wanted, options)', function (t) {
+  t.plan(4 * 2)
+
+  class CallbackProvider extends Provider {
+    _manifests (callback) {
+      callback(null, [{ name: 'test1' }, { name: 'test2' }])
+    }
+  }
+
+  class PromiseProvider extends ProviderP {
+    async _manifests () {
+      return [{ name: 'test1' }, { name: 'test2' }]
+    }
+  }
+
+  for (const Ctor of [CallbackProvider, PromiseProvider]) {
+    const provider = new Ctor()
+
+    let sync = true
+
+    provider.find({ name: 'test2' }, { a: 1 }, function (err, manifest) {
+      t.ifError(err)
+      t.same(manifest, bm({ name: 'test2', options: { a: 1 } }))
+      t.is(sync, false, 'dezalgoed')
+    })
+
+    sync = false
+
+    provider.find({ name: 'test2' }, { a: 1 }).then(function (manifest) {
+      t.same(manifest, bm({ name: 'test2', options: { a: 1 } }))
+    })
+  }
+})
+
+test('open(wanted, target)', function (t) {
+  t.plan(28)
+
+  const mockBrowser = {
+    open (callback) {
+      t.pass('called open')
+      if (callback === undefined) return Promise.resolve()
+      callback()
+    }
+  }
+
+  class CallbackProvider extends Provider {
+    _manifests (callback) {
+      callback(null, [{ name: 'test1' }, { name: 'test2' }])
+    }
+
+    _browser (manifest, target) {
+      t.is(manifest.name, 'test2')
+      t.is(target.url, 'http://localhost')
+
+      return mockBrowser
+    }
+  }
+
+  class PromiseProvider extends ProviderP {
+    async _manifests () {
+      return [{ name: 'test1' }, { name: 'test2' }]
+    }
+
+    _browser (manifest, target) {
+      t.is(manifest.name, 'test2')
+      t.is(target.url, 'http://localhost')
+
+      return mockBrowser
+    }
+  }
+
+  for (const Ctor of [CallbackProvider, PromiseProvider]) {
+    const provider = new Ctor()
+
+    let sync = true
+
+    provider.open({ name: 'test2' }, 'http://localhost', function (err, browser) {
+      t.ifError(err, 'no error')
+      t.is(browser, mockBrowser, 'got browser (1)')
+      t.is(sync, false, 'dezalgoed')
+    })
+
+    sync = false
+
+    provider.open({ name: 'test2' }, 'http://localhost').then(function (browser) {
+      t.is(browser, mockBrowser, 'got browser (2)')
+    })
+
+    provider.open('test2', 'http://localhost').then(function (browser) {
+      t.is(browser, mockBrowser, 'got browser (3)')
+    })
   }
 })
 

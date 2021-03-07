@@ -74,11 +74,15 @@ Either way, the public interface supports both promises and callbacks:
 ```js
 const provider = new MyProvider()
 
+// Shorthands
+const browser = await provider.open('ff', 'https://example.com')
+const manifest = await provider.find('ff')
+
 // Get a list of desired browsers
 const wanted = [{ name: 'ff', version: 'oldest..latest' }]
 const manifests = await provider.manifests(wanted)
 
-// Instantiate a browser
+// Instantiate a browser from a manifest
 const target = { url: 'http://localhost:3000' }
 const browser = provider.browser(manifests[0], target)
 
@@ -97,7 +101,44 @@ Get an array of manifests. A `wanted` array may be provided to [match the manife
 
 ### `provider.browser(manifest, target)`
 
-Instantiate and synchronously return an [`abstract-browser`](https://github.com/airtap/abstract-browser) instance from a manifest.
+Instantiate and synchronously return an [`abstract-browser`](https://github.com/airtap/abstract-browser) instance from a manifest. The `target` argument must be a string url or an object in the form of `{ url }`.
+
+### `provider.open(wanted, target[, options][, callback])`
+
+Convenience method for opening a single browser. If no callback is provided, a promise is returned. The `wanted` argument is required and can be a string as a shorthand for `{ name }` or an object with manifest properties to [match](https://github.com/airtap/match-browsers). The `target` argument must be a string url or an object in the form of `{ url }`. The `options` argument will populate `manifest.options`.
+
+Examples:
+
+```js
+const browser = await provider.open('ff', 'https://example.com')
+```
+
+```js
+const browser = await provider.open(
+  { name: 'chrome', channel: 'canary' },
+  'https://example.com',
+  { headless: false }
+)
+```
+
+### `provider.find(wanted[, options][, callback])`
+
+Convenience method for finding a single manifest. The `wanted` argument is required and can be a string as a shorthand for `{ name }` or an object with manifest properties to [match](https://github.com/airtap/match-browsers). The `options` argument will populate `manifest.options`. If no callback is provided, a promise is returned.
+
+Examples:
+
+```js
+const manifest = await provider.find('chrome')
+```
+
+```js
+const manifest = await provider.find({
+  name: 'firefox',
+  supports: {
+    headless: true
+  }
+})
+```
 
 ### `provider.tunnel([options, ][callback])`
 

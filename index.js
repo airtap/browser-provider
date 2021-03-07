@@ -48,11 +48,62 @@ class Provider {
       throw new TypeError('First argument "manifest" must be an object')
     }
 
-    if (typeof target !== 'object' || target === null) {
-      throw new TypeError('Second argument "target" must be an object')
+    if (typeof target === 'string') {
+      target = { url: target }
+    } else if (typeof target !== 'object' || target === null) {
+      throw new TypeError('Second argument "target" must be a string or object')
     }
 
     return this._browser(manifest, target)
+  }
+
+  // Convenience method for finding a single manifest
+  find (wanted, options, callback) {
+    if (typeof options === 'function') {
+      return this.find(wanted, null, options)
+    }
+
+    if (typeof wanted === 'string') {
+      wanted = { name: wanted }
+    }
+
+    if (options) {
+      wanted = { ...wanted, options }
+    }
+
+    if (callback === undefined) {
+      return this.manifests([wanted]).then(first)
+    } else {
+      this.manifests([wanted], function (err, manifests) {
+        if (err) return callback(err)
+        callback(null, manifests[0])
+      })
+    }
+  }
+
+  // Convenience method for opening a single browser
+  open (wanted, target, options, callback) {
+    if (typeof options === 'function') {
+      return this.open(wanted, target, null, options)
+    }
+
+    if (callback === undefined) {
+      return this.find(wanted, options).then(manifest => {
+        const browser = this.browser(manifest, target)
+        return browser.open().then(() => browser)
+      })
+    } else {
+      this.find(wanted, options, (err, manifest) => {
+        if (err) return callback(err)
+
+        const browser = this.browser(manifest, target)
+
+        browser.open(function (err) {
+          if (err) return callback(err)
+          callback(null, browser)
+        })
+      })
+    }
   }
 
   tunnel (options, callback) {
@@ -109,4 +160,8 @@ function transform (wanted) {
 
     return manifests
   }
+}
+
+function first (arr) {
+  return arr[0]
 }
